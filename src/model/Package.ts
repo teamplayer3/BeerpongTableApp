@@ -1,4 +1,4 @@
-import { Byte, checkByteBounds, NBytes, numberToByte } from "../util/Utils"
+import { Byte, checkByteBounds, checkU16Bounds, NBytes, numberToByte, u16ToBytes } from "../util/Utils"
 import { Pot } from "./Pot"
 import { TextEncoder } from "text-encoder"
 
@@ -7,7 +7,7 @@ enum PackageId {
 }
 
 const START_BYTE = 0x02
-const END_BYTE = 0x0A
+const END_BYTE = 0x03
 
 export default class Package {
     payloadLen: Byte
@@ -16,19 +16,22 @@ export default class Package {
     constructor(
         payload: NBytes,
     ) {
-        checkByteBounds(payload.length)
+        checkU16Bounds(payload.length)
 
         this.payloadLen = payload.length
         this.payload = payload
     }
 
     pack = () => {
-        const startOffset = 2
+        const startOffset = 3
 
         const payload = new Uint8Array(startOffset + this.payloadLen + 1)
-        payload.set([START_BYTE, numberToByte(this.payloadLen)], 0)
+        let u16Bytes = u16ToBytes(this.payloadLen);
+        payload.set([START_BYTE, u16Bytes[0], u16Bytes[1]], 0)
         payload.set(this.payload, startOffset)
         payload.set([END_BYTE], startOffset + this.payloadLen)
+
+        console.log(payload)
 
         return payload
     }
@@ -46,13 +49,16 @@ export default class Package {
         // }, emptyPayload)
 
         const jsonPayload = JSON.stringify({
-            "cmd": "SET_COLOR",
-            "pots": pots
+            "cmd": "SetColor",
+            "pots": pots.map(p => {
+                return {
+                    id: p.id,
+                    color: p.color,
+                }
+            })
         })
         const encoder = new TextEncoder('utf8')
         let payload = encoder.encode(jsonPayload)
-
-        console.log(payload)
 
         return new Package(payload)
     }

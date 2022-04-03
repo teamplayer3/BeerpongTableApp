@@ -21,9 +21,9 @@ export class Color {
     static white = () => new Color(MAX_BYTE_VAL, MAX_BYTE_VAL, MAX_BYTE_VAL)
 
     serialize = () => {
-        return new Uint8Array([numberToByte(this.r), 
-                                numberToByte(this.g), 
-                                numberToByte(this.b)])
+        return new Uint8Array([numberToByte(this.r),
+        numberToByte(this.g),
+        numberToByte(this.b)])
     }
 
     toHexString = () => {

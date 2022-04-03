@@ -51,6 +51,10 @@ export const numberToByte = (value: number) => {
     return value & 0xFF
 }
 
+export const u16ToBytes = (value: number) => {
+    return [(value >> 8) & 0xFF, value & 0xFF]
+}
+
 export const byteToHex = (byte: Byte) => {
     return `${(byte >> 4).toString(16)}${(byte & 0xF).toString(16)}`.toUpperCase()
 }
@@ -61,6 +65,10 @@ export const rgbToHex = (r: number, g: number, b: number) => {
 
 export const checkByteBounds = (val: number) => {
     if (val > 0xFF) throw "value to big [0 255] -> " + val
+}
+
+export const checkU16Bounds = (val: number) => {
+    if (val > 0xFFFF) throw "value to big [0 65.536] -> " + val
 }
 
 export type SubHandle = (() => void) | undefined

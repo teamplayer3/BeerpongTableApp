@@ -85,9 +85,21 @@ class TableConnection {
         if (!this.bleDevice) return
 
         try {
-            const sendValue = bytesToString(bytes)
-            const b64 = base64.encode(sendValue)
-            await this.bleDevice.writeCharacteristicWithoutResponseForService(serviceUUID, characteristicUUID, b64)
+            for (let i = 0; i < bytes.length / 20 + 1; i++) {
+                const lower = i * 20;
+                const upper = (i + 1) * 20;
+
+                let chunk
+                if (upper > bytes.length) {
+                    chunk = bytes.subarray(lower, bytes.length);
+                } else {
+                    chunk = bytes.subarray(lower, upper);
+                }
+
+                const b64 = base64.encodeFromByteArray(chunk)
+                await this.bleDevice.writeCharacteristicWithoutResponseForService(serviceUUID, characteristicUUID, b64)
+            }
+
         }
         catch (err) {
             console.log("error while sending data" + err)
