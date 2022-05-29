@@ -53,7 +53,11 @@ export default class Package {
             "pots": pots.map(p => {
                 return {
                     id: p.id,
-                    color: p.color,
+                    color: {
+                        r: Math.floor(p.color.r),
+                        g: Math.floor(p.color.g),
+                        b: Math.floor(p.color.b),
+                    },
                 }
             })
         })

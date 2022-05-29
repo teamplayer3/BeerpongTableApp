@@ -49,7 +49,7 @@ export class Pot {
     serialize = () => {
         const colorSerialized = this.color.serialize()
         const bytes = new Uint8Array(1 + colorSerialized.length)
-        
+
         bytes.set([numberToByte(this.id)], 0)
         bytes.set(colorSerialized, 1)
 

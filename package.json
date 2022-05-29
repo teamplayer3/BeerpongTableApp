@@ -10,12 +10,16 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
+    "@react-native-picker/picker": "^2.4.1",
+    "@types/react-native-input-spinner": "^1.4.2",
     "mobx-react": "^7.3.0",
     "react": "17.0.2",
+    "react-devtools": "^4.24.4",
     "react-native": "0.68.0",
     "react-native-base64": "^0.2.1",
     "react-native-ble-plx": "^2.0.3",
     "react-native-eject": "^0.1.2",
+    "react-native-input-spinner": "^1.7.12",
     "react-native-paper": "^4.12.0",
     "react-native-shadow-2": "^6.0.3",
     "react-native-svg": "^12.3.0",

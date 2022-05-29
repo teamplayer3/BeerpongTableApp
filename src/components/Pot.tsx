@@ -1,27 +1,28 @@
-import { Observer } from "mobx-react";
 import React, { Fragment } from "react";
 import { GestureResponderEvent, TouchableOpacity, View, ViewStyle } from "react-native";
 import { Color } from "../model/Color";
-import { Pot } from "../model/Pot";
-
 
 const borderWidth = 3
 const divideBorder = 1
+const borderColor = 'red'
 
-export default function TabelPotView(props: {
-    pot: Pot
-    size: number
-    onPress: (pot: Pot) => void
+export default function PotComponent(props: {
+    potId: number,
+    size: number,
+    bordered: boolean,
+    color: Color,
+    overlay: any,
+    onPress: () => void
 }) {
-    const {pot, size, onPress} = props
+    const { potId, size, onPress } = props
     const innerSize = size - 2 * borderWidth - 2 * divideBorder
 
     const innerStyle: (color: Color) => ViewStyle = (color: Color) => ({
         position: 'absolute',
         left: borderWidth + divideBorder,
         top: borderWidth + divideBorder,
-        backgroundColor: color.toHexString(), 
-        width: innerSize, 
+        backgroundColor: color.toHexString(),
+        width: innerSize,
         height: innerSize,
         borderRadius: innerSize / 2,
     })
@@ -33,10 +34,9 @@ export default function TabelPotView(props: {
         borderRadius: size / 2,
         left: 0,
         top: 0,
-
-        borderStyle: "solid", 
-        borderWidth: borderWidth, 
-        borderColor: 'red'
+        borderStyle: "solid",
+        borderWidth: borderWidth,
+        borderColor: borderColor
     }
 
     const touchableStyle: ViewStyle = {
@@ -48,17 +48,13 @@ export default function TabelPotView(props: {
 
     const onPressInner = (event: GestureResponderEvent) => {
         event.persist()
-        onPress(pot)
+        onPress()
     }
 
     return (
         <TouchableOpacity style={touchableStyle} onPress={onPressInner}>
-            <Observer>
-                {() => pot.observer_selected.get() === true ? <View style={borderStyle}/> : <Fragment/>}
-            </Observer>
-            <Observer>
-                {() => <View style={innerStyle(pot.observer_color.get())}/>}
-            </Observer>
+            {props.bordered ? <View style={borderStyle} /> : <Fragment />}
+            <View style={innerStyle(props.color)} />
         </TouchableOpacity>
     )
 

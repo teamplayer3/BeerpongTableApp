@@ -12,11 +12,18 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import { TranslateYTransform, View, PermissionsAndroid } from 'react-native';
 
 import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
+import { initTeams } from './src/lib/GameState';
+import { GameMode } from './src/model/GameConfig';
+import { GameStatistics } from './src/model/GameStatistics';
 import { BleManagerProvider } from './src/provider/BleManagerProvider';
 import { PotHandlerProvider, usePotHandler } from './src/provider/PotHandlerProvider';
 import { TableConnectionProvider, useTableConnection } from './src/provider/TableConnectionProvider';
 import ColorSelectView from './src/view/ColorSelectView';
-import { TabelBottomSide, TabelTopSide } from './src/view/TabelSide';
+import GameConfigView from './src/view/GameConfigView';
+import { GameStatsView } from './src/view/GameStatsView';
+import { GameView } from './src/view/GameView';
+import StartScreenView from './src/view/StartScreenView';
+import Table from './src/view/TableView';
 
 type SpacingArgument = number | string;
 
@@ -62,6 +69,13 @@ const theme = {
   },
 };
 
+enum GameState {
+  OnStartScreen,
+  InConfig,
+  InGame,
+  ShowStatistics
+}
+
 export default function App() {
 
   useEffect(() => {
@@ -72,13 +86,43 @@ export default function App() {
     }
   })
 
+  const [gameState, setGameState] = useState<GameState>(GameState.InGame);
+  const [gameStatistics, setGameStatistics] = useState<undefined | GameStatistics>(undefined);
+
+  const teams = initTeams("testA", 1, "testB", 1)
+  const startTeam = 0
+  const gameTime = undefined
+  const gameMode = GameMode.Standard
+
+
+  const onGameEnd = (stats: GameStatistics) => {
+    setGameStatistics(stats)
+  }
+
   return (
     <PaperProvider theme={theme}>
       <GrantPermissions>
         <BleManagerProvider>
           <TableConnectionProvider>
             <PotHandlerProvider>
-              <TestComp />
+              {
+                gameState === GameState.OnStartScreen &&
+                <StartScreenView onStart={() => setGameState(GameState.InConfig)} />
+              }
+              {
+                gameState === GameState.InConfig &&
+                <GameConfigView onCloseConfig={() => setGameState(GameState.OnStartScreen)} onStartGame={(gameConfig) => setGameState(GameState.InGame)} />
+              }
+              {
+                gameState === GameState.InGame &&
+                <GameView onGameEnd={onGameEnd} gameMode={gameMode} teams={teams} gameTime={gameTime} startTeam={startTeam} />
+              }
+              {
+                gameStatistics !== undefined &&
+                <GameStatsView gameStatistics={gameStatistics!} />
+              }
+
+              {/* <TestComp /> */}
             </PotHandlerProvider>
           </TableConnectionProvider>
         </BleManagerProvider>
@@ -117,18 +161,18 @@ const GrantPermissions: React.FC<{ children: ReactNode[] | ReactNode, }> = ({ ch
 
 function TestComp() {
 
-  const tabelConnetion = useTableConnection()
+  const tableConnection = useTableConnection()
 
   return (
     <View>
-      <ConnectionToTabel />
+      <ConnectionToTable />
     </View>
   )
 }
 
-function ConnectionToTabel() {
+function ConnectionToTable() {
 
-  const tabelConnetion = useTableConnection()
+  const tableConnection = useTableConnection()
   const potHandler = usePotHandler()
   useEffect(() => {
 
@@ -136,7 +180,7 @@ function ConnectionToTabel() {
 
     // const package_ = Package.setPotColors([pot, pot])
 
-    // tabelConnetion.send(package_.pack())
+    // tableConnection.send(package_.pack())
 
   })
 
@@ -156,8 +200,7 @@ function ConnectionToTabel() {
         backgroundColor: 'yellow'
       }}
     >
-      <TabelTopSide />
-      <TabelBottomSide />
+      <Table />
       <View style={{
         transform: [{
           translateY: 0

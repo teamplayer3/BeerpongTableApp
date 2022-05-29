@@ -76,3 +76,7 @@ export type SubHandle = (() => void) | undefined
 export const cancelSub = (handle: SubHandle) => {
     if (handle !== undefined) handle()
 }
+
+export const logObjStruct = (value: any) => {
+    console.log(JSON.stringify(value, null, 4))
+}
