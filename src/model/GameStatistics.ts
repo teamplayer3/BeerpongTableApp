@@ -14,9 +14,24 @@ interface TeamStats {
     remainingCups: number
 }
 
-export interface GameStatistics {
-    gameMode: GameMode,
-    teams: Team[],
-    teamWon: number,
+export class GameStatistics {
+    gameMode: GameMode
+    teams: Team[]
+    teamWon: number
     teamStats: TeamStats[]
+
+    constructor(gameMode: GameMode,
+        teams: Team[],
+        teamWon: number,
+        teamStats: TeamStats[]) {
+
+        this.gameMode = gameMode
+        this.teams = teams
+        this.teamWon = teamWon
+        this.teamStats = teamStats
+    }
+
+    get teamWonName() {
+        return this.teams.find((team) => team.id == this.teamWon)!.name
+    }
 }

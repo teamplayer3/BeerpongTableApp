@@ -1,48 +1,58 @@
 import React, { useEffect } from 'react'
 import { Text, View } from "react-native";
-import { PotLayout } from '../components/PotLayout';
+import { PotLayout, PotStyle, StyledPot } from '../components/PotLayout';
+import { SpecificPot } from '../lib/GameState';
 import { Color } from '../model/Color';
 import { useGameState } from '../provider/GameStateProvider';
 import { logObjStruct } from '../util/Utils';
 
 
+export enum ViewFocus {
+    FullTable = 0,
+    TeamTop = 1,
+    TeamBottom = 2
+}
 
-export default function TableView() {
-
-    const [gameState, setGameState] = useGameState();
-
+export function TableView(props: {
+    viewFocus: ViewFocus,
+    onPressPot: (pot: SpecificPot) => void,
+    potsTop: StyledPot[],
+    potsBottom: StyledPot[]
+}) {
     const onPress = (idx: number, tableIdx: number) => {
-        const pot = {
+        props.onPressPot({
             id: idx,
             teamId: tableIdx
-        }
-        const newGameState = gameState
-        const actions = newGameState.clickPot(pot)
-        newGameState.selectedClickPotAction(pot, actions[0])
-        logObjStruct(newGameState.teams[pot.teamId])
-        setGameState({
-            ...newGameState
         })
     }
 
     return (
         <View style={{
-            height: "100%",
             flexDirection: 'column',
             justifyContent: 'space-between'
         }}>
-            <View style={{
-                flexDirection: 'column',
-                alignItems: 'center',
-            }}>
-                <PotLayout onPress={(idx) => onPress(idx, 0)} potStyleMapping={(idx) => { return { bordered: false, color: Color.red(), overlay: undefined } }} horizontalFlip />
-            </View>
-            <View style={{
-                flexDirection: 'column',
-                alignItems: 'center',
-            }}>
-                <PotLayout onPress={(idx) => onPress(idx, 0)} potStyleMapping={(idx) => { return { bordered: false, color: Color.red(), overlay: undefined } }} />
-            </View>
+            {
+                (props.viewFocus === ViewFocus.TeamTop || props.viewFocus === ViewFocus.FullTable) &&
+                <View style={{
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginVertical: 20
+                }}>
+                    <PotLayout onPress={(idx) => onPress(idx, 0)} pots={props.potsTop} horizontalFlip />
+                </View>
+            }
+            {
+                (props.viewFocus === ViewFocus.TeamBottom || props.viewFocus === ViewFocus.FullTable) &&
+                <View style={{
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    marginVertical: 20
+                }}>
+                    <PotLayout onPress={(idx) => onPress(idx, 1)} pots={props.potsBottom} />
+                </View>
+            }
+
         </View>
     )
 }
+

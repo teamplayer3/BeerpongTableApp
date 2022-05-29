@@ -12,7 +12,8 @@ export default function PotComponent(props: {
     bordered: boolean,
     color: Color,
     overlay: any,
-    onPress: () => void
+    onPress: () => void,
+    pressable?: boolean
 }) {
     const { potId, size, onPress } = props
     const innerSize = size - 2 * borderWidth - 2 * divideBorder
@@ -52,7 +53,7 @@ export default function PotComponent(props: {
     }
 
     return (
-        <TouchableOpacity style={touchableStyle} onPress={onPressInner}>
+        <TouchableOpacity style={touchableStyle} onPress={onPressInner} disabled={!props.pressable}>
             {props.bordered ? <View style={borderStyle} /> : <Fragment />}
             <View style={innerStyle(props.color)} />
         </TouchableOpacity>

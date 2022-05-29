@@ -9,7 +9,7 @@
  */
 
 import React, { ReactNode, useEffect, useState } from 'react';
-import { TranslateYTransform, View, PermissionsAndroid } from 'react-native';
+import { TranslateYTransform, View, PermissionsAndroid, LogBox } from 'react-native';
 
 import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
 import { initTeams } from './src/lib/GameState';
@@ -23,7 +23,9 @@ import GameConfigView from './src/view/GameConfigView';
 import { GameStatsView } from './src/view/GameStatsView';
 import { GameView } from './src/view/GameView';
 import StartScreenView from './src/view/StartScreenView';
-import Table from './src/view/TableView';
+import { TableView, ViewFocus } from './src/view/TableView';
+
+LogBox.ignoreLogs(['new NativeEventEmitter']); // Ignore log notification by message
 
 type SpacingArgument = number | string;
 
@@ -96,6 +98,7 @@ export default function App() {
 
 
   const onGameEnd = (stats: GameStatistics) => {
+    setGameState(GameState.ShowStatistics)
     setGameStatistics(stats)
   }
 
@@ -118,8 +121,8 @@ export default function App() {
                 <GameView onGameEnd={onGameEnd} gameMode={gameMode} teams={teams} gameTime={gameTime} startTeam={startTeam} />
               }
               {
-                gameStatistics !== undefined &&
-                <GameStatsView gameStatistics={gameStatistics!} />
+                gameState === GameState.ShowStatistics && gameStatistics !== undefined &&
+                <GameStatsView gameStatistics={gameStatistics!} onQuitStatistics={() => setGameState(GameState.OnStartScreen)} />
               }
 
               {/* <TestComp /> */}
@@ -137,14 +140,12 @@ const requestBluetoothPermission = async () => {
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
     ]);
-
-    console.log(granted)
   } catch (err) {
     console.warn(err);
   }
 };
 
-const GrantPermissions: React.FC<{ children: ReactNode[] | ReactNode, }> = ({ children }) => {
+const GrantPermissions = (props: { children: ReactNode[] | ReactNode }) => {
 
   let granted = useState(false)
 
@@ -154,7 +155,7 @@ const GrantPermissions: React.FC<{ children: ReactNode[] | ReactNode, }> = ({ ch
 
   return (
     <View>
-      {granted && children}
+      {granted && props.children}
     </View>
   )
 }
@@ -200,7 +201,7 @@ function ConnectionToTable() {
         backgroundColor: 'yellow'
       }}
     >
-      <Table />
+      {/* <TableView viewFocus={ViewFocus.FullTable} onPressPot={(pot) => { }} /> */}
       <View style={{
         transform: [{
           translateY: 0

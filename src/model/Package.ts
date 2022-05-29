@@ -1,6 +1,7 @@
 import { Byte, checkByteBounds, checkU16Bounds, NBytes, numberToByte, u16ToBytes } from "../util/Utils"
-import { Pot } from "./Pot"
 import { TextEncoder } from "text-encoder"
+import { SpecificPot } from "../lib/GameState"
+import { Color } from "./Color"
 
 enum PackageId {
     SET_POT_COLORS = 1
@@ -36,7 +37,7 @@ export default class Package {
         return payload
     }
 
-    static setPotColors = (pots: Pot[]) => {
+    static setPotColors = (pots: SpecificPot[], color: Color) => {
         // const serializedPots = pots.map((pot) => pot.serialize())
         // const byteAmount = serializedPots.reduce((byteAmount, potBytes, _) => byteAmount += potBytes.length, 0);
         // const bytesPerPot = byteAmount / pots.length
@@ -50,13 +51,14 @@ export default class Package {
 
         const jsonPayload = JSON.stringify({
             "cmd": "SetColor",
+            "table_side": 0,
             "pots": pots.map(p => {
                 return {
                     id: p.id,
                     color: {
-                        r: Math.floor(p.color.r),
-                        g: Math.floor(p.color.g),
-                        b: Math.floor(p.color.b),
+                        r: Math.floor(color.r),
+                        g: Math.floor(color.g),
+                        b: Math.floor(color.b),
                     },
                 }
             })

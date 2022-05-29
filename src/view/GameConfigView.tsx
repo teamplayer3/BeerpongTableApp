@@ -71,6 +71,12 @@ export default function GameConfigView(props: {
                                     maxPlayTime: num
                                 })} />
                             </ConfigRow>
+                            <ConfigRow text="Bälle pro Team">
+                                <InputSpinner textColor="white" min={1} step={1} value={gameConfig.ballsPerTeam} onChange={(num: number) => setGameConfig({
+                                    ...gameConfig,
+                                    ballsPerTeam: num
+                                })} />
+                            </ConfigRow>
                             <ConfigRow text="Spielmodus" fixedWidth={200}>
                                 <Picker placeholder="Modus" selectedValue={gameConfig.gameMode} onValueChange={(itemValue, itemIndex) => setGameConfig({
                                     gameMode: itemValue

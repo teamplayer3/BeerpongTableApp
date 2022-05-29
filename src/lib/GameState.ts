@@ -23,7 +23,7 @@ export interface Team {
     remainingTime: number | undefined
 }
 
-interface SpecificPot {
+export interface SpecificPot {
     id: number,
     teamId: number
 }
@@ -33,6 +33,15 @@ export enum ClickPotAction {
     Select,
     UndoShot,
     Unselect
+}
+
+export const clickPotActionToString = (action: ClickPotAction) => {
+    switch (action) {
+        case ClickPotAction.Shot: return "Getroffen";
+        case ClickPotAction.Select: return "Selektieren";
+        case ClickPotAction.UndoShot: return "Treffer entfernen";
+        case ClickPotAction.Unselect: return "Selektion aufheben";
+    }
 }
 
 const initPot = (id: number): Pot => {
@@ -83,8 +92,16 @@ export class GameState {
 
     clickPot = (pot: SpecificPot): ClickPotAction[] => {
         let potObj = this.getPot(pot)!
+        let actins = []
 
-        return [ClickPotAction.Shot]
+        if (!isPotFullyShot(potObj)) {
+            actins.push(ClickPotAction.Shot)
+        }
+
+        if (potObj.state.shotCount > 0) {
+            actins.push(ClickPotAction.UndoShot)
+        }
+        return actins
     }
 
     selectedClickPotAction = (pot: SpecificPot, action: ClickPotAction) => {
@@ -117,7 +134,11 @@ export class GameState {
 
     shotPot = (pot: SpecificPot) => {
         const potObj = this.getPot(pot)!
+        if (isPotFullyShot(potObj)) {
+            return
+        }
         potObj.state.shotCount += 1
+        this.setNextTeam()
     }
 
     getPot = (pot: SpecificPot) => {
@@ -125,14 +146,19 @@ export class GameState {
             ?.pots.find((value) => value.id == pot.id)
     }
 
+    getTeam = (id: number) => {
+        return this.teams.find((team) => team.id === id)
+    }
+
     isGameOver = () => {
         return this.remainingTime === 0
     }
 
     teamHasLost = () => {
-        let team = this.teams.find((team) => {
-            return team.pots.every((value) => isPotFullyShot(value))
-        })
+        let team = this.teams.find((team) => team.pots.every((value) => isPotFullyShot(value)))
+        if (team !== undefined) {
+            console.log("Team " + team.name + " has lost")
+        }
         return team
     }
 
@@ -148,6 +174,7 @@ export class GameState {
             case 1: teamId = 0;
                 break;
         }
+        console.log(teamId)
         return this.teams.find((team) => team.id === teamId)
     }
 
@@ -160,6 +187,7 @@ export class GameState {
     }
 
     setNextTeam = () => {
+        console.log(this.currentTeamId)
         this.currentTeamId + 1 > 1 ?
             this.currentTeamId = 0 :
             this.currentTeamId += 1
@@ -170,31 +198,29 @@ export class GameState {
         if (teamWon === undefined) {
             return undefined
         }
-        return {
-            gameMode: this.gameMode,
-            teamStats: [{
-                teamId: this.teams[0].id,
-                remainingCups: this.teams[0].pots.reduce((prev, curr) => prev += isPotFullyShot(curr) ? 0 : 1, 0),
-                shotAccuracy: 0
-            }, {
-                teamId: this.teams[1].id,
-                remainingCups: this.teams[1].pots.reduce((prev, curr) => prev += isPotFullyShot(curr) ? 0 : 1, 0),
-                shotAccuracy: 0
-            }],
-            teamWon: teamWon.id,
-            teams: this.teams.map((team) => {
+        return new GameStatistics(
+            this.gameMode,
+            this.teams.map((team) => {
                 return {
                     id: team.id,
                     playerCount: team.playerCount,
                     name: team.name
                 }
+            }),
+            teamWon.id,
+            this.teams.map((team) => {
+                return {
+                    teamId: team.id,
+                    remainingCups: team.pots.reduce((prev, curr) => prev += isPotFullyShot(curr) ? 0 : 1, 0),
+                    shotAccuracy: 0
+                }
             })
-        }
+        )
     }
 
 }
 
-const isPotFullyShot = (pot: Pot): boolean => {
+export const isPotFullyShot = (pot: Pot): boolean => {
     return pot.state.shotCount >= 1
 }
 

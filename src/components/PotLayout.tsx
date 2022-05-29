@@ -14,6 +14,12 @@ const potLayout = [
     [9, 1]
 ]
 
+export interface StyledPot {
+    potId: number,
+    pressable: boolean,
+    style: PotStyle
+}
+
 export interface PotStyle {
     bordered: boolean,
     color: Color,
@@ -22,16 +28,16 @@ export interface PotStyle {
 
 export function PotLayout(props: {
     horizontalFlip?: boolean,
-    potStyleMapping: (potId: number) => PotStyle,
-    onPress: (potId: number) => void
+    onPress: (potId: number) => void,
+    pots: StyledPot[]
 }) {
 
-    const { horizontalFlip, onPress, potStyleMapping } = props
+    const { horizontalFlip, onPress } = props
 
     const styledPotComp = (idx: number) => {
-        const styled = potStyleMapping(idx);
+        const pot = props.pots.find((pot) => pot.potId === idx)!
         return (
-            <PotComponent key={idx} bordered={styled.bordered} color={styled.color} overlay={styled.overlay} potId={idx} size={potSize} onPress={() => onPress(idx)} />
+            <PotComponent key={idx} pressable={pot.pressable} bordered={pot.style.bordered} color={pot.style.color} overlay={pot.style.overlay} potId={idx} size={potSize} onPress={() => onPress(idx)} />
         )
     }
 

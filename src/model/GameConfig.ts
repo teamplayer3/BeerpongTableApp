@@ -16,5 +16,6 @@ export default class GameConfig {
     playersPerGame: number = 1;
     maxPlayTime: number | undefined = undefined;
     gameMode: GameMode = GameMode.Standard;
+    ballsPerTeam: number = 1;
 
 }

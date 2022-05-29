@@ -59,8 +59,8 @@ export class PotHandler {
 
         const now = Date.now()
         if (now - this.lastSendColors > 100 / 30) {
-            const package_ = Package.setPotColors(selectedPots)
-            this.tableConnection.send(package_.pack())
+            // const package_ = Package.setPotColors(selectedPots)
+            // this.tableConnection.send(package_.pack())
             this.lastSendColors = now
         }
     }
