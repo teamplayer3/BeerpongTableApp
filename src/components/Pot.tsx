@@ -1,5 +1,5 @@
 import React, { Fragment } from "react";
-import { GestureResponderEvent, TouchableOpacity, View, ViewStyle } from "react-native";
+import { Animated, GestureResponderEvent, TouchableOpacity, View, ViewStyle } from "react-native";
 import { Color } from "../model/Color";
 
 const borderWidth = 3
@@ -8,7 +8,7 @@ const borderColor = 'red'
 
 export default function PotComponent(props: {
     potId: number,
-    size: number,
+    size: Animated.Value,
     bordered: boolean,
     color: Color,
     overlay: any,
@@ -16,36 +16,10 @@ export default function PotComponent(props: {
     pressable?: boolean
 }) {
     const { potId, size, onPress } = props
-    const innerSize = size - 2 * borderWidth - 2 * divideBorder
+    const innerSize = Animated.subtract(size, 2 * borderWidth - 2 * divideBorder)
+    const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity)
 
-    const innerStyle: (color: Color) => ViewStyle = (color: Color) => ({
-        position: 'absolute',
-        left: borderWidth + divideBorder,
-        top: borderWidth + divideBorder,
-        backgroundColor: color.toHexString(),
-        width: innerSize,
-        height: innerSize,
-        borderRadius: innerSize / 2,
-    })
-
-    const borderStyle: ViewStyle = {
-        width: size,
-        height: size,
-        position: 'absolute',
-        borderRadius: size / 2,
-        left: 0,
-        top: 0,
-        borderStyle: "solid",
-        borderWidth: borderWidth,
-        borderColor: borderColor
-    }
-
-    const touchableStyle: ViewStyle = {
-        position: 'relative',
-        width: size,
-        height: size,
-        borderRadius: size / 2
-    }
+    const halfSize = Animated.divide(size, 2)
 
     const onPressInner = (event: GestureResponderEvent) => {
         event.persist()
@@ -53,10 +27,34 @@ export default function PotComponent(props: {
     }
 
     return (
-        <TouchableOpacity style={touchableStyle} onPress={onPressInner} disabled={!props.pressable}>
-            {props.bordered ? <View style={borderStyle} /> : <Fragment />}
-            <View style={innerStyle(props.color)} />
-        </TouchableOpacity>
+        <AnimatedTouchable style={{
+            position: 'relative',
+            width: size,
+            height: size,
+            borderRadius: halfSize
+        }} onPress={onPressInner} disabled={!props.pressable}>
+            {props.bordered ? <Animated.View style={{
+                width: size,
+                height: size,
+                position: 'absolute',
+                borderRadius: halfSize,
+                left: 0,
+                top: 0,
+                borderStyle: "solid",
+                borderWidth: borderWidth,
+                borderColor: borderColor
+            }} /> : <Fragment />}
+            <Animated.View style={{
+                position: 'absolute',
+                left: borderWidth + divideBorder,
+                top: borderWidth + divideBorder,
+                backgroundColor: props.color.toHexString(),
+                width: innerSize,
+                height: innerSize,
+                borderRadius: Animated.divide(innerSize, 2),
+            }} />
+        </AnimatedTouchable>
+
     )
 
 }

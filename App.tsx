@@ -12,8 +12,9 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import { TranslateYTransform, View, PermissionsAndroid, LogBox } from 'react-native';
 
 import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
+import CustomIcon from './src/icons/CustomIcon';
 import { initTeams } from './src/lib/GameState';
-import { GameMode } from './src/model/GameConfig';
+import GameConfig, { GameMode } from './src/model/GameConfig';
 import { GameStatistics } from './src/model/GameStatistics';
 import { BleManagerProvider } from './src/provider/BleManagerProvider';
 import { PotHandlerProvider, usePotHandler } from './src/provider/PotHandlerProvider';
@@ -23,7 +24,6 @@ import GameConfigView from './src/view/GameConfigView';
 import { GameStatsView } from './src/view/GameStatsView';
 import { GameView } from './src/view/GameView';
 import StartScreenView from './src/view/StartScreenView';
-import { TableView, ViewFocus } from './src/view/TableView';
 
 LogBox.ignoreLogs(['new NativeEventEmitter']); // Ignore log notification by message
 
@@ -90,11 +90,16 @@ export default function App() {
 
   const [gameState, setGameState] = useState<GameState>(GameState.InGame);
   const [gameStatistics, setGameStatistics] = useState<undefined | GameStatistics>(undefined);
+  const [gameConfig, setGameConfig] = useState<undefined | GameConfig>({
+    ballsPerTeam: 1,
+    gameMode: GameMode.Standard,
+    maxPlayTime: undefined,
+    playersPerGame: 1
+  });
 
   const teams = initTeams("testA", 1, "testB", 1)
   const startTeam = 0
   const gameTime = undefined
-  const gameMode = GameMode.Standard
 
 
   const onGameEnd = (stats: GameStatistics) => {
@@ -114,11 +119,14 @@ export default function App() {
               }
               {
                 gameState === GameState.InConfig &&
-                <GameConfigView onCloseConfig={() => setGameState(GameState.OnStartScreen)} onStartGame={(gameConfig) => setGameState(GameState.InGame)} />
+                <GameConfigView onCloseConfig={() => setGameState(GameState.OnStartScreen)} onStartGame={(gameConfig) => {
+                  setGameConfig(gameConfig)
+                  setGameState(GameState.InGame)
+                }} />
               }
               {
                 gameState === GameState.InGame &&
-                <GameView onGameEnd={onGameEnd} gameMode={gameMode} teams={teams} gameTime={gameTime} startTeam={startTeam} />
+                <GameView onGameEnd={onGameEnd} gameConfig={gameConfig!} teams={teams} gameTime={gameTime} startTeam={startTeam} />
               }
               {
                 gameState === GameState.ShowStatistics && gameStatistics !== undefined &&

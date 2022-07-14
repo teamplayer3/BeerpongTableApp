@@ -1,7 +1,8 @@
 
+import { clone, cloneDeep } from "lodash"
 import { PotStyle } from "../components/PotLayout"
 import { Color } from "../model/Color"
-import { GameMode } from "../model/GameConfig"
+import GameConfig from "../model/GameConfig"
 import { GameStatistics } from "../model/GameStatistics"
 
 
@@ -21,6 +22,8 @@ export interface Team {
     name: string,
     pots: Pot[]
     remainingTime: number | undefined
+    missedShots: number
+    shots: number
 }
 
 export interface SpecificPot {
@@ -28,21 +31,12 @@ export interface SpecificPot {
     teamId: number
 }
 
-export enum ClickPotAction {
-    Shot,
-    Select,
-    UndoShot,
-    Unselect
+export enum ShotType {
+    Normal,
+    Bounce,
+    Trick
 }
 
-export const clickPotActionToString = (action: ClickPotAction) => {
-    switch (action) {
-        case ClickPotAction.Shot: return "Getroffen";
-        case ClickPotAction.Select: return "Selektieren";
-        case ClickPotAction.UndoShot: return "Treffer entfernen";
-        case ClickPotAction.Unselect: return "Selektion aufheben";
-    }
-}
 
 const initPot = (id: number): Pot => {
     return {
@@ -52,6 +46,14 @@ const initPot = (id: number): Pot => {
             shotCount: 0
         }
     }
+}
+
+export interface GameStateSnapshot {
+    teams: Team[]
+    remainingTime: number | undefined
+    currentTeamId: number
+    gameConfig: GameConfig
+    currTeamShotCount: number
 }
 
 export const initTeams = (
@@ -64,57 +66,43 @@ export const initTeams = (
             name: teamAName,
             playerCount: teamAPlayerCount,
             pots: new Array(10).fill(undefined).map((_, idx) => initPot(idx)),
-            remainingTime: undefined
+            remainingTime: undefined,
+            missedShots: 0,
+            shots: 0
         },
         {
             id: 1,
             name: teamBName,
             playerCount: teamBPlayerCount,
             pots: new Array(10).fill(undefined).map((_, idx) => initPot(idx)),
-            remainingTime: undefined
+            remainingTime: undefined,
+            missedShots: 0,
+            shots: 0
         }
     ]
 }
 
+const NEEDED_SHOTS_PER_POT = 1
+const MAX_REPLAY_ACTIONS = 10
+
 export class GameState {
 
-    gameMode: GameMode
     teams: Team[]
     remainingTime: number | undefined
     currentTeamId: number
+    gameConfig: GameConfig
+    currTeamShotCount: number
 
-    constructor(gameMode: GameMode, teams: Team[], startTeam: number, remainingTime: number | undefined) {
-        this.gameMode = gameMode
+    constructor(teams: Team[], startTeam: number, remainingTime: number | undefined, gameConfig: GameConfig) {
+        this.gameConfig = gameConfig
         this.teams = teams
         this.remainingTime = remainingTime
         this.currentTeamId = startTeam
+        this.currTeamShotCount = 0
     }
 
-    clickPot = (pot: SpecificPot): ClickPotAction[] => {
-        let potObj = this.getPot(pot)!
-        let actins = []
-
-        if (!isPotFullyShot(potObj)) {
-            actins.push(ClickPotAction.Shot)
-        }
-
-        if (potObj.state.shotCount > 0) {
-            actins.push(ClickPotAction.UndoShot)
-        }
-        return actins
-    }
-
-    selectedClickPotAction = (pot: SpecificPot, action: ClickPotAction) => {
-        switch (action) {
-            case ClickPotAction.Shot: this.shotPot(pot);
-                break;
-            case ClickPotAction.Select: this.selectPot(pot);
-                break;
-            case ClickPotAction.Unselect: this.unselectPot(pot);
-                break;
-            case ClickPotAction.UndoShot: this.undoShotPot(pot);
-                break;
-        }
+    getTeamShotCount = (): number => {
+        return this.currTeamShotCount
     }
 
     selectPot = (pot: SpecificPot) => {
@@ -132,13 +120,50 @@ export class GameState {
         potObj.state.shotCount -= 1
     }
 
-    shotPot = (pot: SpecificPot) => {
+    shotPot = (pot: SpecificPot, shotType: ShotType) => {
         const potObj = this.getPot(pot)!
         if (isPotFullyShot(potObj)) {
             return
         }
         potObj.state.shotCount += 1
-        this.setNextTeam()
+
+        let currTeam = this.currentTeam()
+        currTeam.shots += 1
+        this.evaluateIfBallsToOtherTeam()
+    }
+
+    notHitPot = () => {
+        let currTeam = this.currentTeam()
+        currTeam.missedShots += 1
+        currTeam.shots += 1
+        this.evaluateIfBallsToOtherTeam()
+    }
+
+    evaluateIfBallsToOtherTeam = () => {
+        if (this.gameConfig.ballsPerTeam > this.currTeamShotCount + 1) {
+            this.currTeamShotCount += 1
+        }
+        else {
+            this.setNextTeam()
+            this.currTeamShotCount = 0
+        }
+    }
+
+    reorderNotShotPots = (teamId: number, notShotIndexes: number[]) => {
+        if (!this.isNewPatternValid(teamId, notShotIndexes)) {
+            return false
+        }
+
+        this.getTeam(teamId)?.pots.forEach((pot) => {
+            let inNewPattern = notShotIndexes.find((idx) => idx === pot.id)
+            pot.state.shotCount = inNewPattern === undefined ? NEEDED_SHOTS_PER_POT : 0
+        })
+    }
+
+    isNewPatternValid = (teamId: number, notShotIndexes: number[]) => {
+        let remainingInPattern = notShotIndexes.length
+        let remaining = this.remainingPots(teamId)
+        return remainingInPattern == remaining ? true : false
     }
 
     getPot = (pot: SpecificPot) => {
@@ -187,7 +212,6 @@ export class GameState {
     }
 
     setNextTeam = () => {
-        console.log(this.currentTeamId)
         this.currentTeamId + 1 > 1 ?
             this.currentTeamId = 0 :
             this.currentTeamId += 1
@@ -199,7 +223,7 @@ export class GameState {
             return undefined
         }
         return new GameStatistics(
-            this.gameMode,
+            this.gameConfig.gameMode,
             this.teams.map((team) => {
                 return {
                     id: team.id,
@@ -212,16 +236,34 @@ export class GameState {
                 return {
                     teamId: team.id,
                     remainingCups: team.pots.reduce((prev, curr) => prev += isPotFullyShot(curr) ? 0 : 1, 0),
-                    shotAccuracy: 0
+                    shotAccuracy: (team.shots - team.missedShots) / team.shots
                 }
             })
         )
     }
 
+    createSnapShot = (): GameStateSnapshot => {
+        return {
+            currentTeamId: this.currentTeamId,
+            currTeamShotCount: this.currTeamShotCount,
+            gameConfig: this.gameConfig,
+            remainingTime: this.remainingTime,
+            teams: cloneDeep(this.teams)
+        }
+    }
+
+    setFromSnapShot = (snapshot: GameStateSnapshot) => {
+        this.currentTeamId = snapshot.currentTeamId
+        this.currTeamShotCount = snapshot.currTeamShotCount
+        this.gameConfig = snapshot.gameConfig
+        this.remainingTime = snapshot.remainingTime
+        this.teams = snapshot.teams
+    }
+
 }
 
 export const isPotFullyShot = (pot: Pot): boolean => {
-    return pot.state.shotCount >= 1
+    return pot.state.shotCount >= NEEDED_SHOTS_PER_POT
 }
 
 const mapPotStateToStyle = (potState: PotState): PotStyle => {

@@ -24,6 +24,7 @@ export const GameStatsView = (props: {
     return (
         <View>
             {teamWonLine()}
+            <Text>Treffer Accuracy: {Math.floor(props.gameStatistics.winnerTeamStats().shotAccuracy * 100)}%</Text>
             <Button title="Fertig" onPress={props.onQuitStatistics}></Button>
         </View>
     )

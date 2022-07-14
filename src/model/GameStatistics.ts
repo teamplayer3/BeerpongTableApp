@@ -34,4 +34,8 @@ export class GameStatistics {
     get teamWonName() {
         return this.teams.find((team) => team.id == this.teamWon)!.name
     }
+
+    winnerTeamStats = () => {
+        return this.teamStats.find((stats) => stats.teamId == this.teamWon)!
+    }
 }

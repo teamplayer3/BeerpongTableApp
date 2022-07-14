@@ -1,10 +1,10 @@
 import React, { ReactNode } from "react"
-import { View } from "react-native"
+import { Animated, View } from "react-native"
 
 
 export default function PotRow(props: {
     children: ReactNode[] | ReactNode,
-    gap: number
+    gap: Animated.Value
 }) {
     const { children, gap } = props
 
@@ -12,7 +12,7 @@ export default function PotRow(props: {
         <View style={{
             flexDirection: 'row',
         }}>
-            {React.Children.map(children, child => <View style={{ marginHorizontal: gap / 2 }}>{child}</View>)}
+            {React.Children.map(children, child => <Animated.View style={{ marginHorizontal: Animated.divide(gap, 2) }}>{child}</Animated.View>)}
         </View>
     )
 }
