@@ -27,8 +27,8 @@ export interface StyledPot {
 
 export interface PotStyle {
     bordered: boolean,
-    color: Color,
-    overlay: any
+    color: string,
+    overlay: any,
 }
 
 export function PotLayout(props: {

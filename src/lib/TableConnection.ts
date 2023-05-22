@@ -1,20 +1,20 @@
 import { Alert } from "react-native"
 import base64 from "react-native-base64"
 import { BleError, BleManager, Characteristic, Device, State, Subscription } from "react-native-ble-plx"
-import { bytesToString, requestLocationPermissionForBluetooth, showToast } from "../util/Utils"
+import { requestLocationPermissionForBluetooth, showToast } from "../util/Utils"
 import { ListenerHandle } from "./interface"
 
 const tableIdent = "B4:52:A9:12:92:3A"
 const serviceUUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 const characteristicUUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
 
-enum ConnectionState {
-    INIT = 0,
-    START = 1,
-    CONNECTED = 2,
-    DISCONNECTED = 3,
-    RECONNECT = 4,
-    STOP = 5
+export enum ConnectionState {
+    Init = 0,
+    Start = 1,
+    Connected = 2,
+    Disconnected = 3,
+    Reconnect = 4,
+    Stop = 5
 }
 
 type ReceiveCallback = (bytes: Uint8Array) => void
@@ -23,7 +23,7 @@ type StateCallback = (connectionState: ConnectionState) => void
 /** @class TableConnection hanldes the connection to the table. */
 class TableConnection {
 
-    private state: ConnectionState = ConnectionState.INIT
+    public state: ConnectionState = ConnectionState.Init
 
     private bleManager: BleManager
 
@@ -111,7 +111,7 @@ class TableConnection {
      * 
      */
     public stop = async () => {
-        this.changeState(ConnectionState.STOP)
+        this.changeState(ConnectionState.Stop)
         await this.disconnectDevice()
         if (this.bleStateListener) this.bleStateListener.remove()
     }
@@ -121,7 +121,7 @@ class TableConnection {
      * 
      */
     public start = async () => {
-        this.changeState(ConnectionState.START)
+        this.changeState(ConnectionState.Start)
         this.startBluetooth()
     }
 
@@ -177,7 +177,7 @@ class TableConnection {
         device = await device.discoverAllServicesAndCharacteristics()
         this.bleDevice = device!
         this.registerDeviceLostConnectionListener()
-        this.changeState(ConnectionState.CONNECTED)
+        this.changeState(ConnectionState.Connected)
     }
 
     private registerDeviceLostConnectionListener = () => {
@@ -189,7 +189,7 @@ class TableConnection {
     }
 
     private onDeviceDisconnected = async (err: BleError | null, device: Device | null) => {
-        this.changeState(ConnectionState.DISCONNECTED)
+        this.changeState(ConnectionState.Disconnected)
 
         showToast("Lost connecttion...Reconnect")
         console.log("diconnected")
@@ -200,7 +200,7 @@ class TableConnection {
     }
 
     private reconnect = async () => {
-        this.changeState(ConnectionState.RECONNECT)
+        this.changeState(ConnectionState.Reconnect)
         await this.discoverTableConnection()
     }
 

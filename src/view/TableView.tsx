@@ -1,7 +1,8 @@
-import { isString } from 'lodash';
-import React, { ReactNode, useEffect, useRef } from 'react'
-import { Animated, Text, View } from "react-native";
+import React, { useEffect, useRef } from 'react'
+import { Animated, View } from "react-native";
+import Gap from '../components/Gap';
 import { Orientation, PotLayout, StyledPot } from '../components/PotLayout';
+import RotatedText from '../components/RotatedText';
 import { SpecificPot } from '../lib/GameState';
 
 const SLIDE_TRANSLATE_OFF = -360
@@ -18,7 +19,7 @@ export function TableView(props: {
     potsTop: StyledPot[],
     potsBottom: StyledPot[],
     tableOrientation: Orientation,
-    labels?: string[] | ReactNode[]
+    labels: string[]
 }) {
 
     const scaleAnimation = useRef(new Animated.Value(1)).current
@@ -71,53 +72,29 @@ export function TableView(props: {
         })
     }
 
-    const evaluate_label_a = () => {
-        if (props.labels === null || props.labels === undefined || props.labels[0] === undefined) {
-            return;
-        }
-
-        return isString(props.labels[0]) ? (<Text style={{
-            fontSize: 20,
-            transform: [{
-                rotate: "90deg"
-            }]
-        }} > {props.labels[0]}</ Text >) : props.labels[0]
-    }
-
-    const evaluate_label_b = () => {
-        if (props.labels === null || props.labels === undefined || props.labels[1] === undefined) {
-            return;
-        }
-
-        return isString(props.labels[1]) ? (<Text style={{
-            fontSize: 20,
-            transform: [{
-                rotate: "-90deg"
-            }]
-        }}>{props.labels[1]}</Text>) : props.labels[1]
-    }
-
-    const label_a = evaluate_label_a()
-    const label_b = evaluate_label_b()
-
     return (
         <View style={{
             height: 300,
-            width: 350,
+            width: "100%",
+            backgroundColor: "red",
+            position: "relative",
             overflow: "hidden",
         }}>
-            <Animated.View style={{
+            <Animated.View onLayout={(c) => console.log(c.nativeEvent.layout)} style={{
                 display: "flex",
                 flexDirection: props.tableOrientation === Orientation.Vertical ? 'column' : 'row',
                 alignItems: 'center',
                 height: "100%",
-                width: 360,
+                position: "absolute",
                 transform: [{
                     translateX: slideAnimation
                 }]
             }}>
-                {label_a}
-                {label_a && <View style={{ width: 2, backgroundColor: "grey", height: "100%" }}></View>}
+                <RotatedText counterClockWise style={{ fontSize: 20 }}>{props.labels[0]}</RotatedText>
+
+                <Gap size={10} />
+                <View style={{ width: 2, backgroundColor: "grey", height: "100%" }} />
+
                 <Animated.View style={{
                     display: "flex",
                     flexDirection: 'column',
@@ -129,7 +106,12 @@ export function TableView(props: {
                     }],
                     justifyContent: "space-between"
                 }}>
-                    <PotLayout onPress={(idx) => onPress(idx, 0)} pots={props.potsTop} horizontalFlip orientation={props.tableOrientation} />
+                    <PotLayout
+                        onPress={(idx) => onPress(idx, 0)}
+                        pots={props.potsTop}
+                        horizontalFlip
+                        orientation={props.tableOrientation}
+                    />
                 </Animated.View>
 
                 <Animated.View style={{
@@ -141,12 +123,17 @@ export function TableView(props: {
                         scale: scaleAnimation
                     }]
                 }}>
-
-                    <PotLayout onPress={(idx) => onPress(idx, 1)} pots={props.potsBottom} orientation={props.tableOrientation} />
-
+                    <PotLayout
+                        onPress={(idx) => onPress(idx, 1)}
+                        pots={props.potsBottom}
+                        orientation={props.tableOrientation}
+                    />
                 </Animated.View>
-                {label_b && <View style={{ width: 2, backgroundColor: "grey", height: "100%" }}></View>}
-                {label_b}
+
+                <View style={{ width: 2, backgroundColor: "grey", height: "100%" }} />
+                <Gap size={10} />
+
+                <RotatedText style={{ fontSize: 20 }}>{props.labels[1]}</RotatedText>
 
             </Animated.View >
         </View >

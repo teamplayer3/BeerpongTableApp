@@ -22,6 +22,11 @@
     <!-- Needed only if your app uses Bluetooth scan results to derive physical location. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- optionally, if you want to record audio: -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
       android:name=".MainApplication"
       android:label="@string/app_name"

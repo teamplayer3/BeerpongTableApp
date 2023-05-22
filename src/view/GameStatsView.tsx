@@ -1,6 +1,7 @@
-import { Button, StyleProp, Text, TextStyle, View } from "react-native"
+import { StyleProp, Text, TextStyle, View } from "react-native"
 import React from "react"
 import { GameStatistics } from "../model/GameStatistics"
+import { Button } from "../components/Button"
 
 export const GameStatsView = (props: {
     gameStatistics: GameStatistics,
@@ -22,10 +23,20 @@ export const GameStatsView = (props: {
     }
 
     return (
-        <View>
+        <View style={{
+            height: "100%",
+            position: "relative"
+        }}>
             {teamWonLine()}
             <Text>Treffer Accuracy: {Math.floor(props.gameStatistics.winnerTeamStats().shotAccuracy * 100)}%</Text>
-            <Button title="Fertig" onPress={props.onQuitStatistics}></Button>
+            <View style={{
+                position: "absolute",
+                bottom: 30,
+                width: "100%"
+            }}>
+                <Button title="Fertig" onPress={props.onQuitStatistics} horizontalCentered />
+            </View>
+
         </View>
     )
 }

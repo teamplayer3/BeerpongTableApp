@@ -1,4 +1,12 @@
+import { isUndefined } from "lodash";
 import { PermissionsAndroid, ToastAndroid } from "react-native";
+import colorString from "color-string"
+
+export const modifyColorOpacity = (color: string, opacity: number): string => {
+    let rgbColor = colorString.get.rgb(color)
+    rgbColor[3] = opacity
+    return colorString.to.rgb(rgbColor)
+}
 
 export const requestLocationPermissionForBluetooth = async () => {
     try {

@@ -1,50 +1,78 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Text, View } from "react-native";
-import { IconButton } from "react-native-paper";
+import { Animated, BackHandler, Text, View } from "react-native";
+import { IconButton, useTheme } from "react-native-paper";
 import { Orientation, StyledPot } from "../components/PotLayout";
-import { isPotFullyShot, ShotType, SpecificPot, Team } from "../lib/GameState";
-import { Color } from "../model/Color";
-import GameConfig from "../model/GameConfig";
+import { BallsBack, BombShot, ShotType, SpecificPot } from "../lib/GameState";
+import GameConfig, { BombMode } from "../model/GameConfig";
 import { GameStatistics } from "../model/GameStatistics";
 import { GameStateProvider, useGameState } from "../provider/GameStateProvider";
 import { useTableConnection } from "../provider/TableConnectionProvider";
 import { TableView, ViewFocus } from "./TableView";
-import Package from "../model/Package"
 import CustomIcon from "../icons/CustomIcon";
 import { GameReplayBufferProvider, useGameReplayBuffer } from "../provider/GameReplayBufferProvider";
-import { cloneDeep } from "lodash";
-import { logObjStruct } from "../util/Utils";
+import FullScreenOverlay from "../components/FullScreenOverlay";
+import { Button } from "../components/Button";
+import Row from "../components/Row";
+import Column from "../components/Column";
+import Fullscreen from "../components/FullScreen";
+import Gap from "../components/Gap";
+import { isUndefined } from "lodash";
+import { PacketPayloadBuilder } from "../lib/PacketPayloadBuilder";
+import { Color } from "../model/Color";
 
+interface SpecialEvent {
+    name: string
+    description: string
+}
+
+const bombSpecialEvent = (bombMode: BombMode, nBallsToSelect: number): SpecialEvent => {
+    let description = ""
+    switch (bombMode) {
+        case BombMode.CupsAroundShot: description = "Becher um den getroffenen Becher sind ebenfalls getroffen."
+            break
+        case BombMode.SelectNCups: description = `Wähle ${nBallsToSelect} zusätzlich Becher zum entfernen aus.`
+    }
+    return {
+        name: "Bombe",
+        description: description
+    }
+}
+
+const ballsBackSpecialEvent: SpecialEvent = {
+    name: "Balls Back",
+    description: "Bälle zum aktuellen Team zurück."
+}
 
 export function GameView(props: {
     gameConfig: GameConfig,
-    teams: Team[],
-    gameTime: number | undefined,
     startTeam: number,
-    onGameEnd: (gameStats: GameStatistics) => void
+    onGameEnd: (gameStats: GameStatistics) => void,
+    onCancelGame: () => void
 }) {
-
-
     return (
         <GameReplayBufferProvider replayBufferLen={10}>
-            <GameStateProvider gameConfig={props.gameConfig} teams={props.teams} gameTime={props.gameTime} startTeam={props.startTeam}>
-                <GameTable onGameEnd={props.onGameEnd} />
+            <GameStateProvider gameConfig={props.gameConfig} startTeam={props.startTeam}>
+                <GameTable onGameEnd={props.onGameEnd} onCancelGame={props.onCancelGame} />
             </GameStateProvider>
         </GameReplayBufferProvider>
-
     )
 }
 
 function GameTable(props: {
-    onGameEnd: (gameStats: GameStatistics) => void
+    onGameEnd: (gameStats: GameStatistics) => void,
+    onCancelGame: () => void
 }) {
-
+    const theme = useTheme()
     const [gameState, setGameState] = useGameState();
     const [gameReplayBuffer, setGameReplayBuffer] = useGameReplayBuffer()
     const [viewFocus, setViewFocus] = useState(ViewFocus.FullTable);
     const tableConnection = useTableConnection();
     const [shotTypeSelected, setShotTypeSelected] = useState<ShotType>(ShotType.Normal)
     const [tableOrientation, setTableOrientation] = useState<Orientation>(Orientation.Horizontal)
+    const [tryCancel, setTryCancel] = useState(false)
+    const [specialEvent, setSpecialEvent] = useState<SpecialEvent | undefined>()
+    const [showSpecialEventOverlay, setShowSpecialEventOverlay] = useState(false)
+    const setTryCancelRef = useRef(setTryCancel).current
 
     useEffect(() => {
         switchSideViewBasedOnTeamId(gameState.currentTeam().id)
@@ -57,6 +85,54 @@ function GameTable(props: {
             props.onGameEnd(stats)
         }
     }, [gameState.teamHasWon()])
+
+    useEffect(() => {
+        let sub = BackHandler.addEventListener("hardwareBackPress", () => {
+            if (tryCancel) {
+                setTryCancelRef(false)
+            } else {
+                onTryCancelGame()
+            }
+
+            return true
+        })
+        return () => {
+            sub.remove()
+        }
+    }, [tryCancel])
+
+    useEffect(() => {
+        let interval: undefined | NodeJS.Timer = undefined
+        if (!isUndefined(gameState.specialEvent)) {
+            if (gameState.specialEvent instanceof BombShot) {
+                const extraConfig = gameState.gameConfig.extraConfig
+                setSpecialEvent(bombSpecialEvent(extraConfig.bombMode, extraConfig.ballsToSelectForBomb))
+                interval = showSpecialEventOverlayForTime()
+
+            } else if (gameState.specialEvent instanceof BallsBack) {
+                setSpecialEvent(ballsBackSpecialEvent)
+                interval = showSpecialEventOverlayForTime()
+            }
+        }
+        else {
+            setSpecialEvent(undefined)
+        }
+
+        return () => {
+            if (!isUndefined(interval)) {
+                clearInterval(interval)
+            }
+        }
+    }, [gameState.specialEvent])
+
+    const showSpecialEventOverlayForTime = () => {
+        setShowSpecialEventOverlay(true)
+        return setInterval(() => setShowSpecialEventOverlay(false), 5000)
+    }
+
+    const onTryCancelGame = () => {
+        setTryCancel(true)
+    }
 
     const toggleFullScreen = () => {
         if (viewFocus === ViewFocus.FullTable) {
@@ -76,29 +152,31 @@ function GameTable(props: {
     }
 
     const onPressPot = (pot: SpecificPot) => {
-        tableConnection.send(Package.setPotColors([pot], Color.blue()).pack())
-        let snapshot = gameState.createSnapShot()
-        gameState.shotPot(pot, shotTypeSelected)
-        setGameState({
-            ...gameState
-        })
-
+        // tableConnection.send(Package.setPotColors([pot], Color.blue()).pack())
+        const snapshot = gameState.createSnapShot()
         gameReplayBuffer.pushGameState(snapshot)
         setGameReplayBuffer({
             ...gameReplayBuffer
+        })
+
+        setGameState((gameState) => {
+            gameState.shotPot(pot, shotTypeSelected)
+            return gameState
         })
     }
 
     const potStyleMapping = (tableSide: number): StyledPot[] => {
         return gameState.getTeam(tableSide)!.pots.map((pot) => {
+            const potColor = pot.state.shotsPerRound == 2 ? "purple" : pot.state.shotsPerRound > 0 ? "yellow" : !pot.state.available ? "green" : "red"
+            tableConnection.send(PacketPayloadBuilder.setPotColor(pot.id, tableSide, Color.fromString(potColor)!))
             return {
                 potId: pot.id,
                 style: {
-                    color: isPotFullyShot(pot) ? Color.green() : Color.red(),
+                    color: potColor,
                     bordered: false,
                     overlay: undefined
                 },
-                pressable: viewFocus !== ViewFocus.FullTable
+                pressable: viewFocus !== ViewFocus.FullTable && pot.state.available
             }
         })
     }
@@ -138,28 +216,92 @@ function GameTable(props: {
 
     }
 
-    return (
-        <View style={{
-            height: "100%",
-            paddingTop: 40,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            position: "relative"
-        }}>
-            <View style={{ width: "100%", position: "absolute", display: "flex", flexDirection: "row", justifyContent: "space-between" }}>
-                <IconButton icon={"crop-rotate"} color="white" onPress={toggleTableOrientation}></IconButton>
-                <IconButton icon={"undo"} disabled={gameReplayBuffer.length() === 0} color="white" onPress={replayGameState}></IconButton>
-            </View>
-            <View style={{
-                flexDirection: "column",
-                alignItems: "center"
-            }}>
-                <TableView labels={[gameState.getTeam(0)?.name, gameState.getTeam(1)?.name]} tableOrientation={tableOrientation} viewFocus={viewFocus} onPressPot={onPressPot} potsBottom={potStyleMapping(1)} potsTop={potStyleMapping(0)} />
-            </View>
+    const renderedCancelView = () => {
+        return (
+            <FullScreenOverlay contentCenter backgroundColor="black" opacity={0.6} onPressAway={() => setTryCancel(false)}>
+                <Column style={{
+                    backgroundColor: theme.colors.background,
+                    borderRadius: 20,
+                    padding: 20,
+                }} stretch horizontalCentered width={260} height={200}>
+                    <Text style={{
+                        fontSize: 25,
+                        textAlign: "center",
+                    }}>Spiel wirklich beenden?</Text>
+                    <Row stretch>
+                        <Button width={100} title="Nein" onPress={() => setTryCancel(false)} />
+                        <Gap size={20} />
+                        <Button width={100} title="Ja" onPress={() => props.onCancelGame()} />
+                    </Row>
 
-            <BottomInfoView selectedShotType={shotTypeSelected} onSelectShotType={(shotType) => setShotTypeSelected(shotType)} nthShot={gameState.getTeamShotCount()} maxShotsPerTeam={gameState.gameConfig.ballsPerTeam} onNoHit={onNoHit} onToggleFullScreen={toggleFullScreen} collapsed={viewFocus === ViewFocus.FullTable} currentTeam={gameState.currentTeam().name} />
-        </View>
+                </Column>
+            </FullScreenOverlay>
+        )
+    }
+
+    const renderedSpecialEventView = () => {
+        console.log(specialEvent?.name)
+        return (
+            <FullScreenOverlay contentCenter backgroundColor="black" opacity={0.4}>
+                <Column width={300} horizontalCentered style={{
+                    backgroundColor: "gray",
+                    padding: 20,
+                    borderRadius: 20
+                }}>
+                    <Text style={{
+                        fontSize: 30,
+                        fontWeight: "bold",
+                    }}>{specialEvent?.name}</Text>
+                    <Gap size={20} />
+                    <Text style={{
+                        fontSize: 20,
+                        textAlign: "center"
+                    }}>{specialEvent?.description}</Text>
+                </Column>
+            </FullScreenOverlay>
+        )
+    }
+
+    return (
+        <Fullscreen backgroundColor={theme.colors.background}>
+            <Row style={{ width: "100%" }} stretch>
+                <IconButton
+                    icon={"crop-rotate"}
+                    color="white"
+                    onPress={toggleTableOrientation}
+                />
+                <IconButton
+                    icon={"undo"}
+                    disabled={gameReplayBuffer.length() === 0}
+                    color="white"
+                    onPress={replayGameState}
+                />
+            </Row>
+            <Column horizontalCentered>
+                <TableView
+                    labels={[gameState.getTeam(0)!.name, gameState.getTeam(1)!.name]}
+                    tableOrientation={tableOrientation}
+                    viewFocus={viewFocus}
+                    onPressPot={onPressPot}
+                    potsBottom={potStyleMapping(1)}
+                    potsTop={potStyleMapping(0)}
+                />
+            </Column>
+
+            <BottomInfoView
+                selectedShotType={shotTypeSelected}
+                onSelectShotType={(shotType) => setShotTypeSelected(shotType)}
+                nthShot={gameState.getTeamShotCount()}
+                maxShotsPerTeam={gameState.gameConfig.ballsPerTeam}
+                onNoHit={onNoHit}
+                onToggleFullScreen={toggleFullScreen}
+                collapsed={viewFocus === ViewFocus.FullTable}
+                currentTeam={gameState.currentTeam().name}
+            />
+
+            {showSpecialEventOverlay && renderedSpecialEventView()}
+            {tryCancel && renderedCancelView()}
+        </Fullscreen>
     )
 }
 

@@ -2,10 +2,7 @@ import { Byte, checkByteBounds, checkU16Bounds, NBytes, numberToByte, u16ToBytes
 import { TextEncoder } from "text-encoder"
 import { SpecificPot } from "../lib/GameState"
 import { Color } from "./Color"
-
-enum PackageId {
-    SET_POT_COLORS = 1
-}
+import { serialize } from "../../local_modules/bl-packet-bindings"
 
 const START_BYTE = 0x02
 const END_BYTE = 0x03
@@ -49,24 +46,52 @@ export default class Package {
         //     return arr
         // }, emptyPayload)
 
-        const jsonPayload = JSON.stringify({
-            "cmd": "SetColor",
-            "table_side": 0,
-            "pots": pots.map(p => {
-                return {
-                    id: p.id,
-                    color: {
-                        r: Math.floor(color.r),
-                        g: Math.floor(color.g),
-                        b: Math.floor(color.b),
-                    },
+        const bytes = serialize("Packet", {
+            operation: {
+                tag: "set_part_color",
+                value: {
+                    part: {
+                        tag: "Pot",
+                        value: {
+                            color: {
+                                tag: "Color",
+                                value: {
+                                    r: 255,
+                                    g: 0,
+                                    b: 0
+                                }
+                            },
+                            index: {
+                                tag: "Index",
+                                value: 0
+                            },
+                            module: {
+                                tag: "Main",
+                            }
+                        }
+                    }
                 }
-            })
+            }
         })
-        const encoder = new TextEncoder('utf8')
-        let payload = encoder.encode(jsonPayload)
 
-        return new Package(payload)
+        // const jsonPayload = JSON.stringify({
+        //     "cmd": "SetColor",
+        //     "table_side": 0,
+        //     "pots": pots.map(p => {
+        //         return {
+        //             id: p.id,
+        //             color: {
+        //                 r: Math.floor(color.r),
+        //                 g: Math.floor(color.g),
+        //                 b: Math.floor(color.b),
+        //             },
+        //         }
+        //     })
+        // })
+        // const encoder = new TextEncoder('utf8')
+        // let payload = encoder.encode(jsonPayload)
+
+        return new Package(new Uint8Array(bytes))
     }
 
 }
