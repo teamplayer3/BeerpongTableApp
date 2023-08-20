@@ -1,5 +1,5 @@
-import { Derivatable, Serializable } from "./interface"
-import SendReceiver from "./SendReceiver"
+import { Derivatable, Serializable } from './interface';
+import SendReceiver from './SendReceiver';
 
 /** @class ValueTimedSendHandler is a send throttle for a value.
  *         It only sends the value if enough time was passed to last send or
@@ -7,12 +7,11 @@ import SendReceiver from "./SendReceiver"
  *         These limits can be defined by timeLimit and valueLimit.
  */
 class ValueTimedSendHandler<T extends Serializable & Derivatable<T>> {
+    private lastTime: number = 0;
+    private lastValue: T | undefined;
 
-    private lastTime: number = 0
-    private lastValue: T | undefined
-
-    private timeLimit: number
-    private valueLimit: number
+    private timeLimit: number;
+    private valueLimit: number;
 
     /**
      * Creates an instance of ValueTimedSendHandler.
@@ -23,13 +22,13 @@ class ValueTimedSendHandler<T extends Serializable & Derivatable<T>> {
      * @param {valueLimit} value limit to send next value.
      */
     constructor(timeLimit: number, valueLimit: number) {
-        this.timeLimit = timeLimit
-        this.valueLimit = valueLimit
+        this.timeLimit = timeLimit;
+        this.valueLimit = valueLimit;
     }
 
     private diffTime = (): number => {
-        return Date.now() - this.lastTime
-    }
+        return Date.now() - this.lastTime;
+    };
 
     /**
      * Sends the value if enough time passed or the value difference is big enough.
@@ -39,18 +38,19 @@ class ValueTimedSendHandler<T extends Serializable & Derivatable<T>> {
      * @return {boolean} true if value was sent.
      */
     public send = (value: T, sendReceiver: SendReceiver): boolean => {
-        const valueDiff = this.lastValue ? value.derivation(this.lastValue) : Number.MAX_VALUE
+        const valueDiff = this.lastValue
+            ? value.derivation(this.lastValue)
+            : Number.MAX_VALUE;
         if (this.diffTime() > this.timeLimit || valueDiff > this.valueLimit) {
+            const bytes = value.serialize();
+            sendReceiver.send(bytes);
+            this.updateLastSend(value);
 
-            const bytes = value.serialize()
-            sendReceiver.send(bytes)
-            this.updateLastSend(value)
-
-            return true
+            return true;
         }
 
-        return false
-    }
+        return false;
+    };
 
     /**
      * Sends the value instantly. Not checks time and value passed.
@@ -59,16 +59,15 @@ class ValueTimedSendHandler<T extends Serializable & Derivatable<T>> {
      * @param {sendReceiver} A sender which further handles the send request.
      */
     public sendForce = (value: T, sendReceiver: SendReceiver): void => {
-        const bytes = value.serialize()
-        sendReceiver.send(bytes)
-        this.updateLastSend(value)
-    }
+        const bytes = value.serialize();
+        sendReceiver.send(bytes);
+        this.updateLastSend(value);
+    };
 
     private updateLastSend = (value: T): void => {
-        this.lastTime = Date.now()
-        this.lastValue = value
-    }
-
+        this.lastTime = Date.now();
+        this.lastValue = value;
+    };
 }
 
-export default ValueTimedSendHandler
+export default ValueTimedSendHandler;

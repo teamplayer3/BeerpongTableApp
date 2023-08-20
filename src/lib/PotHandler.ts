@@ -1,27 +1,22 @@
-import TableConnection from "./TableConnection";
-import { Color } from "../model/Color";
-import Package from "../model/Package";
-import { Pot } from "../model/Pot";
+import TableConnection from './TableConnection';
+import { Color } from '../model/Color';
+import { Pot } from '../model/Pot';
 
-
-type SelectCallback = (pot: Pot) => void
+type SelectCallback = (pot: Pot) => void;
 
 export class PotHandler {
-
-    pots: Pot[]
+    pots: Pot[];
     private waitOnSelect: {
-        isWaiting: boolean,
-        onResolve?: SelectCallback
+        isWaiting: boolean;
+        onResolve?: SelectCallback;
     } = {
-            isWaiting: false,
-            onResolve: undefined
-        }
-    private tableConnection: TableConnection
+        isWaiting: false,
+        onResolve: undefined,
+    };
+    private tableConnection: TableConnection;
 
-    constructor(
-        tableConnection: TableConnection
-    ) {
-        this.tableConnection = tableConnection
+    constructor(tableConnection: TableConnection) {
+        this.tableConnection = tableConnection;
         this.pots = [
             new Pot(0, Color.default(), this.onPotSelect),
             new Pot(1, Color.default(), this.onPotSelect),
@@ -43,60 +38,59 @@ export class PotHandler {
             new Pot(16, Color.default(), this.onPotSelect),
             new Pot(17, Color.default(), this.onPotSelect),
             new Pot(18, Color.default(), this.onPotSelect),
-            new Pot(19, Color.default(), this.onPotSelect)
-        ]
+            new Pot(19, Color.default(), this.onPotSelect),
+        ];
     }
 
-    private lastSendColors: number = Date.now()
+    private lastSendColors: number = Date.now();
 
     changeColorOfSelected = (color: Color) => {
-        const selectedPots = this.pots.filter(pot => pot.is_selected)
+        const selectedPots = this.pots.filter(pot => pot.is_selected);
 
-        const isNoPotSelected = selectedPots.length === 0
-        if (isNoPotSelected) return
+        const isNoPotSelected = selectedPots.length === 0;
+        if (isNoPotSelected) return;
 
-        selectedPots.forEach(pot => pot.color = color)
+        selectedPots.forEach(pot => (pot.color = color));
 
-        const now = Date.now()
+        const now = Date.now();
         if (now - this.lastSendColors > 100 / 30) {
             // const package_ = Package.setPotColors(selectedPots)
             // this.tableConnection.send(package_.pack())
-            this.lastSendColors = now
+            this.lastSendColors = now;
         }
-    }
+    };
 
     private onPotSelect = (pot: Pot): boolean => {
-        if (!this.waitOnSelect.isWaiting) return true
-        this.resolveSelect(pot)
-        return false
-    }
+        if (!this.waitOnSelect.isWaiting) return true;
+        this.resolveSelect(pot);
+        return false;
+    };
 
     private resolveSelect = (pot: Pot) => {
-        this.waitOnSelect.onResolve!(pot)
+        this.waitOnSelect.onResolve!(pot);
         this.waitOnSelect = {
-            isWaiting: false
-        }
-    }
+            isWaiting: false,
+        };
+    };
 
     waitForPotSelect = (callback: SelectCallback): (() => void) => {
-        return this.setToWaitOnSelect(callback)
-    }
+        return this.setToWaitOnSelect(callback);
+    };
 
     private setToWaitOnSelect = (callback: SelectCallback): (() => void) => {
         this.waitOnSelect = {
             isWaiting: true,
-            onResolve: callback
-        }
+            onResolve: callback,
+        };
 
         return () => {
             this.waitOnSelect = {
-                isWaiting: false
-            }
-        }
-    }
+                isWaiting: false,
+            };
+        };
+    };
 
     unselectAll = () => {
-        this.pots.forEach(pot => pot.unselect())
-    }
-
+        this.pots.forEach(pot => pot.unselect());
+    };
 }

@@ -1,9 +1,8 @@
-import TableConnection from "./TableConnection"
+import TableConnection from './TableConnection';
 
 /** @class SendReceiver handles send requests. Listeners can be registered for received bytes. */
 class SendReceiver {
-
-    private connection: TableConnection
+    private connection: TableConnection;
 
     /**
      * Creates an instance of SendReceiver.
@@ -13,7 +12,7 @@ class SendReceiver {
      * @param {connection} connection hanlde to the table.
      */
     constructor(connection: TableConnection) {
-        this.connection = connection
+        this.connection = connection;
     }
 
     /**
@@ -22,9 +21,8 @@ class SendReceiver {
      * @param {bytes} byte stream.
      */
     public send = (bytes: Uint8Array): void => {
-        this.connection.send(bytes)
-    }
-
+        this.connection.send(bytes);
+    };
 }
 
-export default SendReceiver
+export default SendReceiver;

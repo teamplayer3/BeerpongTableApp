@@ -1,29 +1,32 @@
-import React, { useEffect, useState } from 'react'
-import { BleManager } from 'react-native-ble-plx'
+import React, { useEffect, useState } from 'react';
+import { BleManager } from 'react-native-ble-plx';
 
-const BleManagerContext = React.createContext<BleManager | undefined>(undefined)
+const BleManagerContext = React.createContext<BleManager | undefined>(
+    undefined,
+);
 
 export const useBleManager = () => {
-    const context = React.useContext(BleManagerContext)
+    const context = React.useContext(BleManagerContext);
 
     if (context === undefined) {
-        throw new Error("useUserStore must be used within a UserStoreContext")
+        throw new Error('useUserStore must be used within a UserStoreContext');
     }
 
-    return context!
-}
+    return context!;
+};
 
 export function BleManagerProvider(props: { children: React.ReactNode }) {
-
-    const [bleManagerInstance] = useState(new BleManager())
+    const [bleManagerInstance] = useState(new BleManager());
 
     useEffect(() => {
-        return () => { bleManagerInstance.destroy() }
-    }, [])
+        return () => {
+            bleManagerInstance.destroy();
+        };
+    }, [bleManagerInstance]);
 
     return (
         <BleManagerContext.Provider value={bleManagerInstance}>
             {props.children}
         </BleManagerContext.Provider>
-    )
+    );
 }

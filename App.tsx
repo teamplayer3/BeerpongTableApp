@@ -5,7 +5,6 @@ import { View, PermissionsAndroid, LogBox } from 'react-native';
 import { DefaultTheme, Provider as PaperProvider } from 'react-native-paper';
 import { Route, Router } from './src/components/Router';
 import { BleManagerProvider } from './src/provider/BleManagerProvider';
-import { useStorage } from './src/provider/MMKVStorageProvider';
 import { PlayerStoreProvider } from './src/provider/PlayerStoreProvider';
 import { PotHandlerProvider } from './src/provider/PotHandlerProvider';
 import { TableConnectionProvider } from './src/provider/TableConnectionProvider';
@@ -19,22 +18,25 @@ interface Spacing {
   (): number;
   (value: number): number;
   (topBottom: SpacingArgument, rightLeft: SpacingArgument): string;
-  (top: SpacingArgument, rightLeft: SpacingArgument, bottom: SpacingArgument): string;
+  (
+    top: SpacingArgument,
+    rightLeft: SpacingArgument,
+    bottom: SpacingArgument,
+  ): string;
   (
     top: SpacingArgument,
     right: SpacingArgument,
     bottom: SpacingArgument,
-    left: SpacingArgument
+    left: SpacingArgument,
   ): string;
 }
 
 declare global {
   namespace ReactNativePaper {
-    interface ThemeColors {
-    }
+    interface ThemeColors {}
 
     interface Theme {
-      spacing: Spacing
+      spacing: Spacing;
     }
   }
 }
@@ -43,27 +45,33 @@ const theme = {
   ...DefaultTheme,
   roundness: 2,
   spacing: (a?: any, b?: any, c?: any, d?: any): any => {
-    const stdSpacing: number = 10
-    if (typeof d !== 'undefined') return `${stdSpacing * a}px ${stdSpacing * b}px ${stdSpacing * c}px ${stdSpacing * d}px`
-    if (typeof c !== 'undefined') return `${stdSpacing * a}px ${stdSpacing * b}px ${stdSpacing * c}px`
-    if (typeof b !== 'undefined') return `${stdSpacing * a}px ${stdSpacing * b}px`
-    if (typeof a !== 'undefined') return stdSpacing * a
-    return stdSpacing
+    const stdSpacing: number = 10;
+    if (typeof d !== 'undefined')
+      return `${stdSpacing * a}px ${stdSpacing * b}px ${stdSpacing * c}px ${
+        stdSpacing * d
+      }px`;
+    if (typeof c !== 'undefined')
+      return `${stdSpacing * a}px ${stdSpacing * b}px ${stdSpacing * c}px`;
+    if (typeof b !== 'undefined')
+      return `${stdSpacing * a}px ${stdSpacing * b}px`;
+    if (typeof a !== 'undefined') return stdSpacing * a;
+    return stdSpacing;
   },
   colors: {
     ...DefaultTheme.colors,
     primary: '#3498db',
     accent: '#f1c40f',
-    background: "black"
+    background: 'black',
   },
-}
+};
 
 export default function App() {
-
   useEffect(() => {
-    PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN).then(e => e ? console.log("Has permissions") : console.log("none"))
-    return () => { }
-  }, [])
+    PermissionsAndroid.check(
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+    ).then(e => (e ? console.log('Has permissions') : console.log('none')));
+    return () => {};
+  }, []);
 
   return (
     <PaperProvider theme={theme}>
@@ -82,15 +90,15 @@ export default function App() {
           </TableConnectionProvider>
         </BleManagerProvider>
       </GrantPermissions>
-    </PaperProvider >
-  )
+    </PaperProvider>
+  );
 }
 
 const requestBluetoothPermission = async () => {
   try {
-    const granted = await PermissionsAndroid.requestMultiple([
+    await PermissionsAndroid.requestMultiple([
       PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT
+      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
     ]);
   } catch (err) {
     console.warn(err);
@@ -98,16 +106,11 @@ const requestBluetoothPermission = async () => {
 };
 
 const GrantPermissions = (props: { children: ReactNode[] | ReactNode }) => {
-
-  let granted = useState(false)
+  let granted = useState(false);
 
   useEffect(() => {
-    requestBluetoothPermission()
-  })
+    requestBluetoothPermission();
+  });
 
-  return (
-    <View>
-      {granted && props.children}
-    </View>
-  )
-}
+  return <View>{granted && props.children}</View>;
+};

@@ -1,33 +1,39 @@
-import React, { Dispatch, SetStateAction, useState } from "react"
-import { GameReplayBuffer } from "../lib/GameReplayBuffer"
+import React, { Dispatch, SetStateAction, useState } from 'react';
+import { GameReplayBuffer } from '../lib/GameReplayBuffer';
 
-const DEFAULT_REPLAY_BUFFER_LEN = 10
+const DEFAULT_REPLAY_BUFFER_LEN = 10;
 
-const GameReplayBufferContext = React.createContext<[
-    gameReplayBuffer: GameReplayBuffer,
-    setGameReplayBuffer: Dispatch<SetStateAction<GameReplayBuffer>>
-]>([
-    new GameReplayBuffer(DEFAULT_REPLAY_BUFFER_LEN),
-    () => null
-])
+const GameReplayBufferContext = React.createContext<
+    [
+        gameReplayBuffer: GameReplayBuffer,
+        setGameReplayBuffer: Dispatch<SetStateAction<GameReplayBuffer>>,
+    ]
+>([new GameReplayBuffer(DEFAULT_REPLAY_BUFFER_LEN), () => null]);
 
 export const useGameReplayBuffer = () => {
-    const context = React.useContext(GameReplayBufferContext)
+    const context = React.useContext(GameReplayBufferContext);
 
     if (context === undefined) {
-        throw new Error("useGameReplayBuffer must be used within a GameReplayBufferContext")
+        throw new Error(
+            'useGameReplayBuffer must be used within a GameReplayBufferContext',
+        );
     }
 
-    return context!
-}
+    return context!;
+};
 
-export function GameReplayBufferProvider(props: { children: React.ReactNode, replayBufferLen: number }) {
-
-    const [gameReplayBuffer, setGameReplayBuffer] = useState(new GameReplayBuffer(props.replayBufferLen))
+export function GameReplayBufferProvider(props: {
+    children: React.ReactNode;
+    replayBufferLen: number;
+}) {
+    const [gameReplayBuffer, setGameReplayBuffer] = useState(
+        new GameReplayBuffer(props.replayBufferLen),
+    );
 
     return (
-        <GameReplayBufferContext.Provider value={[gameReplayBuffer, setGameReplayBuffer]}>
+        <GameReplayBufferContext.Provider
+            value={[gameReplayBuffer, setGameReplayBuffer]}>
             {props.children}
         </GameReplayBufferContext.Provider>
-    )
+    );
 }
